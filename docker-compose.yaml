@@ -1,0 +1,36 @@
+services:
+  frontend-angular:
+    build: ./frontend-angular
+    container_name: frontend-angular
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend-dotnet
+    networks:
+      - intelli_network
+
+  backend-dotnet:
+    build: ./backend-dotnet
+    container_name: backend-dotnet
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - ml-service-python
+    networks:
+      - intelli_network
+
+  ml-service-python:
+    build: ./ml-service-python
+    container_name: ml-service-python
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    networks:
+      - intelli_network
+
+networks:
+  intelli_network:
+    driver: bridge
