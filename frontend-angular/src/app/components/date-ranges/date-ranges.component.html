@@ -1,0 +1,205 @@
+<div class="date-ranges-container">
+  <!-- Header -->
+  <div class="header">
+    <h1>MiniML - Predictive Quality Control</h1>
+    <p class="subtitle">Simplified Frontend</p>
+    <div class="abb-logo">ABB</div>
+  </div>
+
+  <!-- Progress Steps -->
+  <div class="progress-steps">
+    <div class="step completed">
+      <div class="step-number">1</div>
+      <div class="step-label">Upload Dataset</div>
+    </div>
+    <div class="step active">
+      <div class="step-number">2</div>
+      <div class="step-label">Date Ranges</div>
+    </div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-label">Model Training</div>
+    </div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-label">Simulation</div>
+    </div>
+    <div class="step-badge">Step 2 of 4</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="date-ranges-section">
+      <h2>Date Range Selection</h2>
+      
+      <!-- Period Cards -->
+      <div class="period-cards">
+        <!-- Training Period -->
+        <div class="period-card training">
+          <div class="card-header">
+            <div class="card-icon">📊</div>
+            <h3>Training Period</h3>
+          </div>
+          <div class="date-inputs">
+            <div class="date-input">
+              <label>Start Date:</label>
+              <input type="date" 
+                     [(ngModel)]="trainingStart" 
+                     (change)="onDateChange()"
+                     class="date-picker">
+            </div>
+            <div class="date-input">
+              <label>End Date:</label>
+              <input type="date" 
+                     [(ngModel)]="trainingEnd" 
+                     (change)="onDateChange()"
+                     class="date-picker">
+            </div>
+          </div>
+        </div>
+
+        <!-- Testing Period -->
+        <div class="period-card testing">
+          <div class="card-header">
+            <div class="card-icon">🧪</div>
+            <h3>Testing Period</h3>
+          </div>
+          <div class="date-inputs">
+            <div class="date-input">
+              <label>Start Date:</label>
+              <input type="date" 
+                     [(ngModel)]="testingStart" 
+                     (change)="onDateChange()"
+                     class="date-picker">
+            </div>
+            <div class="date-input">
+              <label>End Date:</label>
+              <input type="date" 
+                     [(ngModel)]="testingEnd" 
+                     (change)="onDateChange()"
+                     class="date-picker">
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulation Period -->
+        <div class="period-card simulation">
+          <div class="card-header">
+            <div class="card-icon">🎯</div>
+            <h3>Simulation Period</h3>
+          </div>
+          <div class="date-inputs">
+            <div class="date-input">
+              <label>Start Date:</label>
+              <input type="date" 
+                     [(ngModel)]="simulationStart" 
+                     (change)="onDateChange()"
+                     class="date-picker">
+            </div>
+            <div class="date-input">
+              <label>End Date:</label>
+              <input type="date" 
+                     [(ngModel)]="simulationEnd" 
+                     (change)="onDateChange()"
+                     class="date-picker">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validation Message -->
+      <div *ngIf="validationResponse" class="validation-message" 
+           [class.success]="validationResponse?.isValid" 
+           [class.error]="!validationResponse?.isValid">
+        <div class="validation-icon">
+          {{ validationResponse?.isValid ? '✅' : '❌' }}
+        </div>
+        <p>{{ validationResponse?.message }}</p>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-message">
+        <div class="error-icon">❌</div>
+        <p>{{ errorMessage }}</p>
+      </div>
+
+      <!-- Summary Cards -->
+      <div *ngIf="validationResponse?.isValid && periods.length > 0" class="summary-cards">
+        <div *ngFor="let period of periods" class="summary-card" 
+             [style.border-left-color]="getPeriodColor(period.periodName)">
+          <div class="summary-icon" [style.background-color]="getPeriodColor(period.periodName)"></div>
+          <div class="summary-content">
+            <h4>{{ period.periodName }}</h4>
+            <p class="duration">{{ period.durationInDays }} days</p>
+            <p class="range">{{ formatDate(period.startDate) }} to {{ formatDate(period.endDate) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Chart -->
+      <div *ngIf="validationResponse?.isValid && monthlyData.length > 0" class="chart-section">
+        <h3>Selected Date Ranges Summary</h3>
+        <div class="chart-container">
+          <div class="chart">
+            <div class="chart-bars">
+              <div *ngFor="let month of ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']" 
+                   class="bar-container">
+                <div class="bar" [style.height.px]="getBarHeight(month)">
+                  <!-- Training segment -->
+                  <div *ngIf="getMonthlyVolumeByPeriod(month, 'Training') > 0" 
+                       class="bar-segment training"
+                       [style.height.%]="getSegmentHeight(month, 'Training')"
+                       [title]="month + ' Training: ' + getMonthlyVolumeByPeriod(month, 'Training') + ' records'">
+                  </div>
+                  <!-- Testing segment -->
+                  <div *ngIf="getMonthlyVolumeByPeriod(month, 'Testing') > 0" 
+                       class="bar-segment testing"
+                       [style.height.%]="getSegmentHeight(month, 'Testing')"
+                       [title]="month + ' Testing: ' + getMonthlyVolumeByPeriod(month, 'Testing') + ' records'">
+                  </div>
+                  <!-- Simulation segment -->
+                  <div *ngIf="getMonthlyVolumeByPeriod(month, 'Simulation') > 0" 
+                       class="bar-segment simulation"
+                       [style.height.%]="getSegmentHeight(month, 'Simulation')"
+                       [title]="month + ' Simulation: ' + getMonthlyVolumeByPeriod(month, 'Simulation') + ' records'">
+                  </div>
+                  <!-- Baseline segment -->
+                  <div *ngIf="getMonthlyVolumeByPeriod(month, '') > 0" 
+                       class="bar-segment baseline"
+                       [style.height.%]="getSegmentHeight(month, '')"
+                       [title]="month + ' Baseline: ' + getMonthlyVolumeByPeriod(month, '') + ' records'">
+                  </div>
+                </div>
+                <span class="month-label">{{ month }}</span>
+              </div>
+            </div>
+            <div class="chart-labels">
+              <div class="y-axis-label">Volume</div>
+              <div class="x-axis-label">Timeline (2021)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="validate-btn" 
+                (click)="validateRanges()" 
+                [disabled]="isValidating">
+          {{ isValidating ? 'Validating...' : 'Validate Ranges' }}
+        </button>
+        <button class="next-btn" 
+                (click)="proceedToNext()" 
+                [disabled]="!validationResponse?.isValid">
+          Next
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-left">MiniML POC</div>
+    <div class="footer-right">ENGINEERED TO OUTRUN</div>
+  </div>
+</div>

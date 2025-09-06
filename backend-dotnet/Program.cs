@@ -18,6 +18,7 @@ builder.Services.AddSwaggerGen();
 // Register custom services
 builder.Services.AddScoped<ICsvParserService, CsvParserService>();
 builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddScoped<IDateRangeService, DateRangeService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
