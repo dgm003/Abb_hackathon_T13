@@ -7,7 +7,7 @@ namespace Backend.Services
 {
     public interface ICsvParserService
     {
-        Task<DataSummary> ParseCsvFileAsync(IFormFile file);
+        Task<DataSummary> ParseCsvStreamAsync(Stream fileStream, string fileName, long fileSize);
         Task<string> SaveFileAsync(IFormFile file);
         Task<string> SavePreprocessedDataAsync(List<Dictionary<string, object>> records, string originalFileName);
     }
@@ -23,80 +23,94 @@ namespace Backend.Services
             _dataDirectory = configuration["DataDirectory"] ?? "data";
         }
 
-        public async Task<DataSummary> ParseCsvFileAsync(IFormFile file)
+            public async Task<DataSummary> ParseCsvStreamAsync(Stream fileStream, string fileName, long fileSize)
+    {
+        if (fileStream == null || fileSize == 0)
+            throw new ArgumentException("File stream is empty or null");
+
+        if (!fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("File must be a CSV file");
+
+        int totalRecords = 0;
+        int passCount = 0;
+        List<string> headers = null;
+        var startDate = new DateTime(2021, 1, 1, 0, 0, 0);
+
+        // Prepare preprocessed file for streaming write
+        var preprocessedDir = Path.Combine(_dataDirectory, "preprocessed");
+        Directory.CreateDirectory(preprocessedDir);
+        var baseName = Path.GetFileNameWithoutExtension(fileName);
+        var preprocessedFileName = $"{baseName}_preprocessed.csv";
+        var preprocessedFilePath = Path.Combine(preprocessedDir, preprocessedFileName);
+
+        using var reader = new StreamReader(fileStream);
+        using var csvReader = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            if (file == null || file.Length == 0)
-                throw new ArgumentException("File is empty or null");
+            HasHeaderRecord = true,
+            MissingFieldFound = null
+        });
+        using var writer = new StreamWriter(preprocessedFilePath);
+        using var csvWriter = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = true
+        });
 
-            if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("File must be a CSV file");
+        await csvReader.ReadAsync();
+        csvReader.ReadHeader();
+        headers = csvReader.HeaderRecord?.ToList() ?? new List<string>();
 
-            // Save file first
-            var filePath = await SaveFileAsync(file);
+        if (!headers.Contains("Response"))
+            throw new ArgumentException("CSV file must contain a 'Response' column");
 
-            using var reader = new StreamReader(filePath);
-            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+        // Write headers + synthetic_timestamp
+        foreach (var column in headers)
+            csvWriter.WriteField(column);
+        csvWriter.WriteField("synthetic_timestamp");
+        await csvWriter.NextRecordAsync();
+
+        int recordIndex = 0;
+        while (await csvReader.ReadAsync())
+        {
+            var record = new Dictionary<string, object>();
+            foreach (var header in headers)
             {
-                HasHeaderRecord = true,
-                MissingFieldFound = null
-            });
-
-            var records = new List<Dictionary<string, object>>();
-            var headers = new List<string>();
-
-            // Read headers
-            await csv.ReadAsync();
-            csv.ReadHeader();
-            headers = csv.HeaderRecord?.ToList() ?? new List<string>();
-
-            if (!headers.Contains("Response"))
-                throw new ArgumentException("CSV file must contain a 'Response' column");
-
-            // Read all records and add synthetic timestamps
-            var recordIndex = 0;
-            while (await csv.ReadAsync())
-            {
-                var record = new Dictionary<string, object>();
-                foreach (var header in headers)
-                {
-                    record[header] = csv.GetField(header) ?? string.Empty;
-                }
-                
-                // Add synthetic timestamp column (always add for consistency)
-                var syntheticTimestamp = new DateTime(2021, 1, 1, 0, 0, 0).AddSeconds(recordIndex);
-                record["synthetic_timestamp"] = syntheticTimestamp.ToString("yyyy-MM-dd HH:mm:ss");
-                
-                records.Add(record);
-                recordIndex++;
+                record[header] = csvReader.GetField(header) ?? string.Empty;
             }
+            var syntheticTimestamp = startDate.AddSeconds(recordIndex).ToString("yyyy-MM-dd HH:mm:ss");
+            record["synthetic_timestamp"] = syntheticTimestamp;
 
-            // Calculate metadata
-            var totalRecords = records.Count;
-            var totalColumns = headers.Count + 1; // +1 for synthetic_timestamp column
-            var passCount = records.Count(r => r.ContainsKey("Response") && 
-                int.TryParse(r["Response"].ToString(), out int response) && response == 1);
-            var passRate = totalRecords > 0 ? (double)passCount / totalRecords * 100 : 0;
+            // Write record
+            foreach (var column in headers)
+                csvWriter.WriteField(record[column]);
+            csvWriter.WriteField(record["synthetic_timestamp"]);
+            await csvWriter.NextRecordAsync();
 
-            // Always generate synthetic timestamps for consistent processing
-            // According to requirements: start timestamp = 2021-01-01 00:00:00, increment 1 second per row
-            var startDate = new DateTime(2021, 1, 1, 0, 0, 0);
-            var earliestTimestamp = startDate;
-            var latestTimestamp = startDate.AddSeconds(totalRecords - 1);
-
-            // Save preprocessed dataset for next steps (training, simulation)
-            var preprocessedFilePath = await SavePreprocessedDataAsync(records, file.FileName);
-
-            return new DataSummary
+            // Count pass rate
+            if (record.ContainsKey("Response") &&
+                int.TryParse(record["Response"]?.ToString(), out int response) && response == 1)
             {
-                FileName = file.FileName,
-                TotalRecords = totalRecords,
-                TotalColumns = totalColumns,
-                PassRate = Math.Round(passRate, 2),
-                EarliestTimestamp = earliestTimestamp,
-                LatestTimestamp = latestTimestamp,
-                FileSize = FormatFileSize(file.Length)
-            };
+                passCount++;
+            }
+            totalRecords++;
+            recordIndex++;
         }
+
+        var totalColumns = headers.Count + 1;
+        var passRate = totalRecords > 0 ? (double)passCount / totalRecords * 100 : 0;
+        var earliestTimestamp = startDate;
+        var latestTimestamp = startDate.AddSeconds(totalRecords - 1);
+
+        return new DataSummary
+        {
+            FileName = fileName,
+            TotalRecords = totalRecords,
+            TotalColumns = totalColumns,
+            PassRate = Math.Round(passRate, 2),
+            EarliestTimestamp = earliestTimestamp,
+            LatestTimestamp = latestTimestamp,
+            FileSize = FormatFileSize(fileSize)
+        };
+    }
 
         public async Task<string> SaveFileAsync(IFormFile file)
         {
