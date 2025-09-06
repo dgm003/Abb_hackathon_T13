@@ -76,6 +76,8 @@ namespace Backend.Services
             {
                 record[header] = csvReader.GetField(header) ?? string.Empty;
             }
+            
+            // Follow hackathon guidelines: increment 1 second per row
             var syntheticTimestamp = startDate.AddSeconds(recordIndex).ToString("yyyy-MM-dd HH:mm:ss");
             record["synthetic_timestamp"] = syntheticTimestamp;
 
@@ -97,6 +99,8 @@ namespace Backend.Services
 
         var totalColumns = headers.Count + 1;
         var passRate = totalRecords > 0 ? (double)passCount / totalRecords * 100 : 0;
+        
+        // Calculate actual date range from the generated timestamps
         var earliestTimestamp = startDate;
         var latestTimestamp = startDate.AddSeconds(totalRecords - 1);
 
@@ -183,5 +187,6 @@ namespace Backend.Services
             }
             return $"{len:0.##} {sizes[order]}";
         }
+
     }
 }

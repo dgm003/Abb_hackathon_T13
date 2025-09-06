@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { DataService, DataSummary } from '../../services/data.service';
 
 @Component({
@@ -17,7 +18,7 @@ export class UploadComponent implements OnInit {
   errorMessage = '';
   isDragOver = false;
 
-  constructor(private dataService: DataService) { }
+  constructor(private dataService: DataService, private router: Router) { }
 
   ngOnInit(): void {
   }
@@ -104,8 +105,7 @@ export class UploadComponent implements OnInit {
   }
 
   proceedToNext(): void {
-    // This will be implemented when we add navigation between screens
-    console.log('Proceeding to next step...');
+    this.router.navigate(['/date-ranges']);
   }
 
   private isValidCsvFile(file: File): boolean {
