@@ -1,0 +1,406 @@
+.upload-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 5px 0 0 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.abb-logo {
+  background: #e60012;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+/* Progress Steps */
+.progress-steps {
+  background: white;
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #666;
+  font-weight: 500;
+}
+
+.step.active {
+  color: #4CAF50;
+}
+
+.step-number {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.step.active .step-number {
+  background: #4CAF50;
+  color: white;
+}
+
+.step-badge {
+  background: #2196F3;
+  color: white;
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  margin-left: auto;
+}
+
+/* Main Content */
+.main-content {
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.upload-section h2 {
+  color: #333;
+  margin-bottom: 30px;
+  font-size: 1.8rem;
+}
+
+/* Upload Area */
+.upload-area {
+  background: white;
+  border: 2px dashed #ddd;
+  border-radius: 10px;
+  padding: 40px;
+  text-align: center;
+  transition: all 0.3s ease;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.upload-area.drag-over {
+  border-color: #4CAF50;
+  background: #f8fff8;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.upload-icon {
+  font-size: 4rem;
+  opacity: 0.5;
+}
+
+.upload-placeholder p {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.choose-file-btn {
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.choose-file-btn:hover {
+  background: #1976D2;
+}
+
+/* Selected File */
+.selected-file {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.file-icon {
+  font-size: 2rem;
+}
+
+.file-details h3 {
+  margin: 0 0 5px 0;
+  color: #333;
+}
+
+.file-details p {
+  margin: 0;
+  color: #666;
+}
+
+.file-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.upload-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.upload-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.cancel-btn:hover {
+  background: #da190b;
+}
+
+/* Upload Results */
+.upload-results {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: center;
+  padding: 20px;
+  background: #e8f5e8;
+  border-radius: 8px;
+  border: 1px solid #4CAF50;
+}
+
+.success-icon {
+  font-size: 2rem;
+}
+
+.success-message h3 {
+  margin: 0;
+  color: #2e7d32;
+}
+
+/* Metadata Cards */
+.metadata-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.metadata-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease;
+}
+
+.metadata-card:hover {
+  transform: translateY(-2px);
+}
+
+.metadata-card.csv-file {
+  border-left: 4px solid #4CAF50;
+}
+
+.metadata-card.records {
+  border-left: 4px solid #2196F3;
+}
+
+.metadata-card.columns {
+  border-left: 4px solid #FF9800;
+}
+
+.metadata-card.pass-rate {
+  border-left: 4px solid #9C27B0;
+}
+
+.metadata-card.date-range {
+  border-left: 4px solid #F44336;
+}
+
+.card-icon {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.card-content h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-content .value {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.card-content .file-name {
+  margin: 0 0 5px 0;
+  color: #2196F3;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.card-content .file-size {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Next Section */
+.next-section {
+  text-align: center;
+}
+
+.next-btn {
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.next-btn:hover {
+  background: #1976D2;
+}
+
+/* Error Message */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: #ffebee;
+  border: 1px solid #f44336;
+  border-radius: 5px;
+  color: #c62828;
+  margin-top: 20px;
+}
+
+.error-icon {
+  font-size: 1.2rem;
+}
+
+/* Footer */
+.footer {
+  background: linear-gradient(135deg, #e60012 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.footer-left {
+  font-size: 0.9rem;
+}
+
+.footer-right {
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .progress-steps {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .step-badge {
+    margin-left: 0;
+  }
+
+  .metadata-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .file-actions {
+    flex-direction: column;
+  }
+}
