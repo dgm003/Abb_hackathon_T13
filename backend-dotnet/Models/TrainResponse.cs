@@ -16,6 +16,18 @@ namespace Backend.Models
         public List<double> LossCurve { get; set; } = new();
         public List<double> AccCurve { get; set; } = new();
         public Confusion Confusion { get; set; } = new();
+        public ModelMetadata ModelInfo { get; set; } = new();
+    }
+
+    public class ModelMetadata
+    {
+        public string ModelId { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
+        public DateTime TrainedAt { get; set; }
+        public string Algorithm { get; set; } = string.Empty;
+        public int TrainingSamples { get; set; }
+        public int TestSamples { get; set; }
+        public double TrainingTime { get; set; } // in seconds
     }
 
     public class Confusion

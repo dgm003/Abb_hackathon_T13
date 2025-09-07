@@ -8,6 +8,7 @@ namespace Backend.Services
     public interface ICsvParserService
     {
         Task<DataSummary> ParseCsvStreamAsync(Stream fileStream, string fileName, long fileSize);
+        Task<DataSummary> ParseCsvStreamChunkedAsync(Stream fileStream, string fileName, long fileSize, int chunkSize = 10000);
         Task<string> SaveFileAsync(IFormFile file);
         Task<string> SavePreprocessedDataAsync(List<Dictionary<string, object>> records, string originalFileName);
     }
@@ -114,6 +115,129 @@ namespace Backend.Services
             LatestTimestamp = latestTimestamp,
             FileSize = FormatFileSize(fileSize)
         };
+    }
+
+    public async Task<DataSummary> ParseCsvStreamChunkedAsync(Stream fileStream, string fileName, long fileSize, int chunkSize = 10000)
+    {
+        if (fileStream == null || fileSize == 0)
+            throw new ArgumentException("File stream is empty or null");
+
+        if (!fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("File must be a CSV file");
+
+        int totalRecords = 0;
+        int passCount = 0;
+        List<string> headers = null;
+        var startDate = new DateTime(2021, 1, 1, 0, 0, 0);
+
+        // Prepare preprocessed file for streaming write
+        var preprocessedDir = Path.Combine(_dataDirectory, "preprocessed");
+        Directory.CreateDirectory(preprocessedDir);
+        var baseName = Path.GetFileNameWithoutExtension(fileName);
+        var preprocessedFileName = $"{baseName}_preprocessed.csv";
+        var preprocessedFilePath = Path.Combine(preprocessedDir, preprocessedFileName);
+
+        using var reader = new StreamReader(fileStream);
+        using var csvReader = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = true,
+            MissingFieldFound = null
+        });
+        using var writer = new StreamWriter(preprocessedFilePath);
+        using var csvWriter = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = true
+        });
+
+        await csvReader.ReadAsync();
+        csvReader.ReadHeader();
+        headers = csvReader.HeaderRecord?.ToList() ?? new List<string>();
+
+        if (!headers.Contains("Response"))
+            throw new ArgumentException("CSV file must contain a 'Response' column");
+
+        // Write headers + synthetic_timestamp
+        foreach (var column in headers)
+            csvWriter.WriteField(column);
+        csvWriter.WriteField("synthetic_timestamp");
+        await csvWriter.NextRecordAsync();
+
+        int recordIndex = 0;
+        var chunk = new List<Dictionary<string, object>>();
+        
+        while (await csvReader.ReadAsync())
+        {
+            var record = new Dictionary<string, object>();
+            foreach (var header in headers)
+            {
+                record[header] = csvReader.GetField(header) ?? string.Empty;
+            }
+            
+            // Follow hackathon guidelines: increment 1 second per row
+            var syntheticTimestamp = startDate.AddSeconds(recordIndex).ToString("yyyy-MM-dd HH:mm:ss");
+            record["synthetic_timestamp"] = syntheticTimestamp;
+
+            chunk.Add(record);
+
+            // Count pass rate
+            if (record.ContainsKey("Response") &&
+                int.TryParse(record["Response"]?.ToString(), out int response) && response == 1)
+            {
+                passCount++;
+            }
+            totalRecords++;
+            recordIndex++;
+
+            // Process chunk when it reaches the specified size
+            if (chunk.Count >= chunkSize)
+            {
+                await ProcessChunkAsync(csvWriter, chunk, headers);
+                chunk.Clear();
+                
+                // Force garbage collection for large files
+                if (totalRecords % (chunkSize * 10) == 0)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+            }
+        }
+
+        // Process remaining records
+        if (chunk.Any())
+        {
+            await ProcessChunkAsync(csvWriter, chunk, headers);
+        }
+
+        var totalColumns = headers.Count + 1;
+        var passRate = totalRecords > 0 ? (double)passCount / totalRecords * 100 : 0;
+        
+        // Calculate actual date range from the generated timestamps
+        var earliestTimestamp = startDate;
+        var latestTimestamp = startDate.AddSeconds(totalRecords - 1);
+
+        return new DataSummary
+        {
+            FileName = fileName,
+            TotalRecords = totalRecords,
+            TotalColumns = totalColumns,
+            PassRate = Math.Round(passRate, 2),
+            EarliestTimestamp = earliestTimestamp,
+            LatestTimestamp = latestTimestamp,
+            FileSize = FormatFileSize(fileSize)
+        };
+    }
+
+    private async Task ProcessChunkAsync(CsvWriter csvWriter, List<Dictionary<string, object>> chunk, List<string> headers)
+    {
+        foreach (var record in chunk)
+        {
+            foreach (var column in headers)
+                csvWriter.WriteField(record[column]);
+            csvWriter.WriteField(record["synthetic_timestamp"]);
+            await csvWriter.NextRecordAsync();
+        }
+        await csvWriter.FlushAsync();
     }
 
         public async Task<string> SaveFileAsync(IFormFile file)

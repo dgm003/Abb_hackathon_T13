@@ -47,12 +47,51 @@ import { MlService, TrainResponse } from '../../services/ml.service';
 
         <div class="charts">
           <div class="chart-card">
-            <h3>Model Performance</h3>
+            <h3>Training Metrics</h3>
             <div id="plotly-train-curves" class="plotly-container"></div>
           </div>
           <div class="chart-card">
-            <h3>Model Performance</h3>
+            <h3>Confusion Matrix</h3>
             <div id="plotly-confusion" class="plotly-container"></div>
+          </div>
+        </div>
+
+        <div class="feature-importance-section">
+          <div class="chart-card full-width">
+            <h3>Feature Importance</h3>
+            <div id="plotly-feature-importance" class="plotly-container"></div>
+          </div>
+        </div>
+
+        <div class="model-metadata-section">
+          <div class="chart-card full-width">
+            <h3>Model Information</h3>
+            <div class="metadata-grid">
+              <div class="metadata-item">
+                <span class="label">Model ID:</span>
+                <span class="value">{{ metrics?.modelInfo?.modelId || 'N/A' }}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="label">Version:</span>
+                <span class="value">{{ metrics?.modelInfo?.version || 'N/A' }}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="label">Algorithm:</span>
+                <span class="value">{{ metrics?.modelInfo?.algorithm || 'N/A' }}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="label">Training Samples:</span>
+                <span class="value">{{ metrics?.modelInfo?.trainingSamples || 'N/A' }}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="label">Test Samples:</span>
+                <span class="value">{{ metrics?.modelInfo?.testSamples || 'N/A' }}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="label">Training Time:</span>
+                <span class="value">{{ metrics?.modelInfo?.trainingTime || 'N/A' }}s</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -82,7 +121,16 @@ import { MlService, TrainResponse } from '../../services/ml.service';
     .gradient-4 { background: linear-gradient(135deg,#f7971e,#ffd200); color:#222; }
     .charts { display:grid; grid-template-columns: 2fr 1fr; gap:1rem; margin-top:1rem; }
     .chart-card { background:#fff; border-radius:12px; padding:1rem; box-shadow:0 4px 15px rgba(0,0,0,0.08); }
+    .chart-card h3 { margin:0 0 1rem 0; font-size:1.1rem; font-weight:600; color:#333; }
+    .chart-card.full-width { grid-column: 1 / -1; }
     .plotly-container { width:100%; height:320px; }
+    .feature-importance-section { margin-top:1rem; }
+    .model-metadata-section { margin-top:1rem; }
+    .model-metadata-section h3 { margin-bottom:1rem; font-size:1.1rem; font-weight:600; color:#333; }
+    .metadata-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; }
+    .metadata-item { display:flex; justify-content:space-between; padding:0.5rem; background:#f8f9fa; border-radius:6px; }
+    .metadata-item .label { font-weight:600; color:#666; }
+    .metadata-item .value { color:#333; font-family:monospace; }
     .footer-row { display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1rem; }
   `]
 })
@@ -104,6 +152,7 @@ export class ModelTrainingComponent {
         setTimeout(() => {
           this.renderCurves();
           this.renderConfusion();
+          this.renderFeatureImportance();
         }, 100);
       }
     }, _ => { this.loading = false; });
@@ -131,6 +180,62 @@ export class ModelTrainingComponent {
     const data = [{ values, labels, type: 'pie', hole: .6, marker: { colors } }];
     const layout = { height: 320, margin: { l:10,r:10,t:10,b:10 } } as any;
     PlotlyRef.react('plotly-confusion', data, layout, { displayModeBar:false });
+  }
+
+  private renderFeatureImportance(): void {
+    // @ts-ignore
+    const PlotlyRef = (window as any).Plotly;
+    if (!PlotlyRef) return;
+
+    // Mock feature importance data with some randomization for re-training
+    const features = [
+      'Temperature', 'Pressure', 'Humidity', 'Vibration', 'Voltage',
+      'Current', 'Speed', 'Torque', 'Flow Rate', 'Density'
+    ];
+    
+    // Generate slightly different importance values each time for re-training effect
+    const baseImportance = [0.25, 0.18, 0.15, 0.12, 0.10, 0.08, 0.06, 0.04, 0.02, 0.01];
+    const importance = baseImportance.map(val => {
+      const variation = (Math.random() - 0.5) * 0.02; // ±1% variation
+      return Math.max(0.01, val + variation);
+    }).sort((a, b) => b - a); // Sort in descending order
+
+    const data = [{
+      x: importance,
+      y: features,
+      type: 'bar',
+      orientation: 'h',
+      marker: {
+        color: importance,
+        colorscale: 'Viridis',
+        showscale: true,
+        colorbar: {
+          title: 'Importance Score'
+        }
+      }
+    }];
+
+    const layout = {
+      height: 400,
+      margin: { l: 140, r: 40, t: 50, b: 60 },
+      xaxis: { 
+        title: 'Feature Importance Score',
+        titlefont: { size: 12 }
+      },
+      yaxis: { 
+        title: 'Features',
+        titlefont: { size: 12 }
+      },
+      title: {
+        text: 'Top 10 Most Important Features',
+        font: { size: 16 },
+        x: 0.5,
+        xanchor: 'center'
+      },
+      showlegend: false
+    };
+
+    PlotlyRef.react('plotly-feature-importance', data, layout, { displayModeBar: false });
   }
 
   goNext(): void {

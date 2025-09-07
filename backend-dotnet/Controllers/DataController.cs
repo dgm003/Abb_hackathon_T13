@@ -42,7 +42,11 @@ public async Task<ActionResult<FileUploadResponse>> UploadFile([FromForm] FileUp
 
         // Stream the file directly to the parser
         using var fileStream = request.File.OpenReadStream();
-        var dataSummary = await _csvParserService.ParseCsvStreamAsync(fileStream, request.File.FileName, request.File.Length);
+        
+        // Use chunked parsing for large files (> 50MB)
+        var dataSummary = request.File.Length > 50 * 1024 * 1024 
+            ? await _csvParserService.ParseCsvStreamChunkedAsync(fileStream, request.File.FileName, request.File.Length)
+            : await _csvParserService.ParseCsvStreamAsync(fileStream, request.File.FileName, request.File.Length);
 
         _logger.LogInformation("File processed successfully: {FileName}, Records: {Records}", 
             dataSummary.FileName, dataSummary.TotalRecords);

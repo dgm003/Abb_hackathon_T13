@@ -77,6 +77,7 @@ export class UploadComponent implements OnInit {
         this.isUploading = false;
         if (response.success) {
           this.errorMessage = '';
+          this.saveToUploadHistory(response.dataSummary);
         } else {
           this.errorMessage = response.message;
         }
@@ -123,5 +124,56 @@ export class UploadComponent implements OnInit {
     const hasValidMimeType = validMimeTypes.includes(file.type) || file.type === '';
     
     return hasCsvExtension && (hasValidMimeType || file.type === '');
+  }
+
+  goToHistory() {
+    this.router.navigate(['/upload-history']);
+  }
+
+  private saveToUploadHistory(dataSummary: any): void {
+    const historyItem = {
+      id: Date.now().toString(),
+      fileName: dataSummary.fileName,
+      uploadDate: new Date(),
+      fileSize: this.parseFileSize(dataSummary.fileSize),
+      totalRecords: dataSummary.totalRecords,
+      columnCount: dataSummary.totalColumns,
+      passRate: dataSummary.passRate,
+      dateRange: {
+        start: dataSummary.earliestTimestamp,
+        end: dataSummary.latestTimestamp
+      }
+    };
+
+    // Get existing history
+    const existingHistory = JSON.parse(localStorage.getItem('uploadHistory') || '[]');
+    
+    // Add new item to beginning
+    existingHistory.unshift(historyItem);
+    
+    // Keep only last 50 items
+    if (existingHistory.length > 50) {
+      existingHistory.splice(50);
+    }
+    
+    // Save back to localStorage
+    localStorage.setItem('uploadHistory', JSON.stringify(existingHistory));
+  }
+
+  private parseFileSize(fileSizeStr: string): number {
+    // Parse file size string like "1.5 MB" to number in MB
+    const match = fileSizeStr.match(/(\d+\.?\d*)\s*(B|KB|MB|GB)/i);
+    if (!match) return 0;
+    
+    const value = parseFloat(match[1]);
+    const unit = match[2].toUpperCase();
+    
+    switch (unit) {
+      case 'B': return value / (1024 * 1024);
+      case 'KB': return value / 1024;
+      case 'MB': return value;
+      case 'GB': return value * 1024;
+      default: return 0;
+    }
   }
 }

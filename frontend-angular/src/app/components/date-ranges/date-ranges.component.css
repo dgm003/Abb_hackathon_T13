@@ -564,3 +564,147 @@
 /* Hover tooltips: overlays non-interactive, bars capture hover */
 .y-axis-ticks, .chart-labels { pointer-events: none; z-index: 1; }
 .bar, .bar-segment { pointer-events: auto; z-index: 2; }
+
+/* Dark Theme Support */
+.dark-theme .date-ranges-container {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .header {
+  background: linear-gradient(135deg, #1e1e1e, #2d2d2d) !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .progress-steps {
+  background: #1e1e1e !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .step {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .step.active {
+  color: #4caf50 !important;
+}
+
+.dark-theme .step.completed {
+  color: #4caf50 !important;
+}
+
+.dark-theme .step.active .step-number,
+.dark-theme .step.completed .step-number {
+  background: #4caf50 !important;
+  color: white !important;
+}
+
+.dark-theme .step-badge {
+  background: #1976d2 !important;
+  color: white !important;
+}
+
+.dark-theme .date-ranges-section h2 {
+  color: #ffffff !important;
+}
+
+.dark-theme .period-card {
+  background: #1e1e1e !important;
+  border: 1px solid #333 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .period-card.training {
+  border-left-color: #4caf50 !important;
+}
+
+.dark-theme .period-card.testing {
+  border-left-color: #ff9800 !important;
+}
+
+.dark-theme .period-card.simulation {
+  border-left-color: #2196f3 !important;
+}
+
+.dark-theme .card-header h3 {
+  color: #ffffff !important;
+}
+
+.dark-theme .date-input label {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .date-picker {
+  background: #2d2d2d !important;
+  border: 1px solid #555 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .date-picker:focus {
+  border-color: #2196f3 !important;
+}
+
+.dark-theme .validation-message.success {
+  background: #2e7d32 !important;
+  color: #ffffff !important;
+  border-color: #4caf50 !important;
+}
+
+.dark-theme .validation-message.error {
+  background: #c62828 !important;
+  color: #ffffff !important;
+  border-color: #f44336 !important;
+}
+
+.dark-theme .error-message {
+  background: #c62828 !important;
+  color: #ffffff !important;
+  border-color: #f44336 !important;
+}
+
+.dark-theme .summary-card {
+  background: #1e1e1e !important;
+  border: 1px solid #333 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .summary-content h4 {
+  color: #ffffff !important;
+}
+
+.dark-theme .summary-content .duration {
+  color: #64b5f6 !important;
+}
+
+.dark-theme .summary-content .range {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .chart-section {
+  background: #1e1e1e !important;
+  border: 1px solid #333 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .chart-section h3 {
+  color: #ffffff !important;
+}
+
+.dark-theme .month-label {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .y-axis-label,
+.dark-theme .x-axis-label {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .footer {
+  background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%) !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .footer-left,
+.dark-theme .footer-right {
+  color: #ffffff !important;
+}

@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { SimulationService, SimulationData, SimulationStats } from '../../services/simulation.service';
 
 @Component({
@@ -17,23 +18,52 @@ import { SimulationService, SimulationData, SimulationStats } from '../../servic
 
       <!-- Simulation Control -->
       <div class="simulation-control">
-        <button 
-          class="primary" 
-          [disabled]="isRunning" 
-          (click)="startSimulation()"
-          *ngIf="!isCompleted">
-          {{ isRunning ? 'Simulation Running...' : 'Start Simulation' }}
-        </button>
-        <button 
-          class="primary" 
-          (click)="restartSimulation()"
-          *ngIf="isCompleted">
-          Restart Simulation
-        </button>
+        <div class="control-buttons">
+          <button 
+            class="primary" 
+            [disabled]="isRunning" 
+            (click)="startSimulation()"
+            *ngIf="!isRunning && !isCompleted">
+            Start Simulation
+          </button>
+          
+          <button 
+            class="primary pause" 
+            (click)="pauseSimulation()"
+            *ngIf="isRunning && !isPaused">
+            ⏸️ Pause
+          </button>
+          
+          <button 
+            class="primary resume" 
+            (click)="resumeSimulation()"
+            *ngIf="isPaused">
+            ▶️ Resume
+          </button>
+          
+          <button 
+            class="primary stop" 
+            (click)="stopSimulation()"
+            *ngIf="isRunning || isPaused">
+            ⏹️ Stop
+          </button>
+          
+          <button 
+            class="primary" 
+            (click)="restartSimulation()"
+            *ngIf="isCompleted">
+            🔄 Restart
+          </button>
+        </div>
         
         <div class="simulation-status" *ngIf="isCompleted">
           <span class="status-icon">✔</span>
           <span class="status-text">Simulation completed!</span>
+        </div>
+        
+        <div class="simulation-status paused" *ngIf="isPaused">
+          <span class="status-icon">⏸️</span>
+          <span class="status-text">Simulation paused</span>
         </div>
       </div>
 
@@ -106,6 +136,18 @@ import { SimulationService, SimulationData, SimulationStats } from '../../servic
           </table>
         </div>
       </div>
+
+      <!-- Export Section -->
+      <div class="export-section">
+        <div class="export-controls">
+          <button class="primary outline" (click)="exportLogs()" [disabled]="predictions.length === 0">
+            📊 Export Logs (CSV)
+          </button>
+          <button class="primary outline" (click)="exportLogsJSON()" [disabled]="predictions.length === 0">
+            📄 Export Logs (JSON)
+          </button>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -114,11 +156,16 @@ import { SimulationService, SimulationData, SimulationStats } from '../../servic
     .step { background: #eef3ff; color: #3f51b5; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8rem; }
     
     .simulation-control { text-align: center; margin-bottom: 2rem; }
-    .primary { background: #3f51b5; color: #fff; border: 0; border-radius: 6px; padding: 0.8rem 2rem; cursor: pointer; font-size: 1rem; }
+    .control-buttons { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+    .primary { background: #3f51b5; color: #fff; border: 0; border-radius: 6px; padding: 0.8rem 1.5rem; cursor: pointer; font-size: 1rem; }
     .primary:disabled { background: #ccc; cursor: not-allowed; }
+    .primary.pause { background: #ff9800; }
+    .primary.resume { background: #4caf50; }
+    .primary.stop { background: #f44336; }
     .simulation-status { margin-top: 1rem; }
-    .status-icon { color: #2e7d32; font-weight: bold; margin-right: 0.5rem; }
-    .status-text { color: #2e7d32; font-weight: 600; }
+    .simulation-status.paused { color: #ff9800; }
+    .status-icon { font-weight: bold; margin-right: 0.5rem; }
+    .status-text { font-weight: 600; }
     
     .charts-section { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 2rem; }
     .chart-card { background: #fff; border-radius: 12px; padding: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
@@ -143,16 +190,23 @@ import { SimulationService, SimulationData, SimulationStats } from '../../servic
     .prediction-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
     .prediction-badge.pass { background: #e8f5e9; color: #2e7d32; }
     .prediction-badge.fail { background: #ffebee; color: #c62828; }
+    
+    .export-section { margin-top: 2rem; }
+    .export-controls { display: flex; gap: 1rem; justify-content: center; }
   `]
 })
 export class SimulationComponent implements OnInit, OnDestroy {
   isRunning = false;
   isCompleted = false;
+  isPaused = false;
   predictions: SimulationData[] = [];
   stats: SimulationStats = { total: 0, pass: 0, fail: 0, avgConfidence: 0 };
   private simulationInterval: any;
+  private simulationSubscription: Subscription | null = null;
   private qualityChartData: any[] = [];
   private confidenceChartData: any[] = [];
+  private pausedPredictions: SimulationData[] = [];
+  private pausedStats: SimulationStats = { total: 0, pass: 0, fail: 0, avgConfidence: 0 };
 
   constructor(
     private simulationService: SimulationService,
@@ -167,40 +221,97 @@ export class SimulationComponent implements OnInit, OnDestroy {
     if (this.simulationInterval) {
       clearInterval(this.simulationInterval);
     }
+    if (this.simulationSubscription) {
+      this.simulationSubscription.unsubscribe();
+    }
   }
 
   startSimulation() {
     this.isRunning = true;
     this.isCompleted = false;
+    this.isPaused = false;
     this.predictions = [];
     this.stats = { total: 0, pass: 0, fail: 0, avgConfidence: 0 };
     this.qualityChartData = [];
     this.confidenceChartData = [];
 
-    this.simulationService.startSimulation().subscribe({
+    // Reset the simulation counter when starting fresh
+    this.simulationService.resetSimulation();
+
+    this.simulationSubscription = this.simulationService.startSimulation().subscribe({
       next: (data) => {
-        this.predictions.unshift(data); // Add to beginning for newest first
-        this.updateStats(data);
-        this.updateCharts(data);
-        
-        // Keep only last 50 predictions for performance
-        if (this.predictions.length > 50) {
-          this.predictions = this.predictions.slice(0, 50);
+        if (!this.isPaused) {
+          this.predictions.unshift(data); // Add to beginning for newest first
+          this.updateStats(data);
+          this.updateCharts(data);
+          
+          // Keep only last 20 predictions for performance and real-time feel
+          if (this.predictions.length > 20) {
+            this.predictions = this.predictions.slice(0, 20);
+          }
+          
+          // Keep only last 20 data points for chart
+          if (this.qualityChartData.length > 20) {
+            this.qualityChartData = this.qualityChartData.slice(-20);
+          }
         }
       },
       complete: () => {
         this.isRunning = false;
         this.isCompleted = true;
+        this.isPaused = false;
+        this.simulationSubscription = null;
       },
       error: (error) => {
         console.error('Simulation error:', error);
         this.isRunning = false;
+        this.simulationSubscription = null;
       }
     });
   }
 
   restartSimulation() {
+    // Stop current simulation if running
+    if (this.simulationSubscription) {
+      this.simulationSubscription.unsubscribe();
+      this.simulationSubscription = null;
+    }
     this.startSimulation();
+  }
+
+  pauseSimulation() {
+    this.isPaused = true;
+    this.pausedPredictions = [...this.predictions];
+    this.pausedStats = { ...this.stats };
+    // Note: We don't unsubscribe here, just pause the data processing
+  }
+
+  resumeSimulation() {
+    this.isPaused = false;
+    this.predictions = [...this.pausedPredictions];
+    this.stats = { ...this.pausedStats };
+    // Don't reset the simulation counter when resuming
+  }
+
+  stopSimulation() {
+    // Unsubscribe from the simulation to stop it completely
+    if (this.simulationSubscription) {
+      this.simulationSubscription.unsubscribe();
+      this.simulationSubscription = null;
+    }
+    
+    this.isRunning = false;
+    this.isPaused = false;
+    this.isCompleted = false;
+    this.predictions = [];
+    this.stats = { total: 0, pass: 0, fail: 0, avgConfidence: 0 };
+    this.qualityChartData = [];
+    this.confidenceChartData = [];
+    this.pausedPredictions = [];
+    this.pausedStats = { total: 0, pass: 0, fail: 0, avgConfidence: 0 };
+    
+    // Reset the simulation counter
+    this.simulationService.resetSimulation();
   }
 
   private updateStats(data: SimulationData) {
@@ -252,11 +363,23 @@ export class SimulationComponent implements OnInit, OnDestroy {
       marker: { size: 4 }
     }];
 
+    // Fixed Y-axis range from 0 to 100
+    const yRange = [0, 100];
+
     const qualityLayout = {
       height: 300,
-      margin: { l: 40, r: 20, t: 20, b: 40 },
-      xaxis: { title: 'Time' },
-      yaxis: { title: 'Quality Score', range: [0, 100] },
+      margin: { l: 50, r: 20, t: 20, b: 40 },
+      xaxis: { 
+        title: 'Time',
+        type: 'category',
+        autorange: true
+      },
+      yaxis: { 
+        title: 'Quality Score', 
+        range: yRange,
+        fixedrange: false,
+        autorange: false
+      },
       showlegend: true
     };
 
@@ -282,5 +405,57 @@ export class SimulationComponent implements OnInit, OnDestroy {
 
   trackByTime(index: number, prediction: SimulationData): string {
     return prediction.time;
+  }
+
+  exportLogs(): void {
+    if (this.predictions.length === 0) return;
+
+    const csvContent = this.generateCSV();
+    this.downloadFile(csvContent, 'simulation_logs.csv', 'text/csv');
+  }
+
+  exportLogsJSON(): void {
+    if (this.predictions.length === 0) return;
+
+    const jsonContent = JSON.stringify({
+      exportDate: new Date().toISOString(),
+      totalPredictions: this.predictions.length,
+      statistics: this.stats,
+      predictions: this.predictions
+    }, null, 2);
+
+    this.downloadFile(jsonContent, 'simulation_logs.json', 'application/json');
+  }
+
+  private generateCSV(): string {
+    const headers = ['Time', 'Sample ID', 'Prediction', 'Confidence', 'Temperature', 'Pressure', 'Humidity'];
+    const csvRows = [headers.join(',')];
+
+    this.predictions.forEach(prediction => {
+      const row = [
+        prediction.time,
+        prediction.sampleId,
+        prediction.prediction,
+        prediction.confidence,
+        prediction.temperature,
+        prediction.pressure,
+        prediction.humidity
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    return csvRows.join('\n');
+  }
+
+  private downloadFile(content: string, filename: string, mimeType: string): void {
+    const blob = new Blob([content], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   }
 }

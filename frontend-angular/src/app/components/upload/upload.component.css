@@ -15,6 +15,28 @@
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.history-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.history-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
 .header h1 {
   margin: 0;
   font-size: 2rem;
@@ -432,6 +454,118 @@
   font-size: 1rem;
   font-weight: bold;
   letter-spacing: 1px;
+}
+
+/* Dark Theme Support */
+.dark-theme .upload-container {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .header {
+  background: linear-gradient(135deg, #1e1e1e, #2d2d2d) !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .progress-steps {
+  background: #1e1e1e !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .step {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .step.active {
+  color: #4caf50 !important;
+}
+
+.dark-theme .step.active .step-number {
+  background: #4caf50 !important;
+  color: white !important;
+}
+
+.dark-theme .step-badge {
+  background: #1976d2 !important;
+  color: white !important;
+}
+
+.dark-theme .upload-section h2 {
+  color: #ffffff !important;
+}
+
+.dark-theme .upload-area {
+  background: #1e1e1e !important;
+  border: 2px dashed #555 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .upload-area.drag-over {
+  border-color: #4caf50 !important;
+  background: #2d2d2d !important;
+}
+
+.dark-theme .upload-placeholder p {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .selected-file {
+  background: #1e1e1e !important;
+  border: 1px solid #333 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .file-info {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .file-details h3 {
+  color: #ffffff !important;
+}
+
+.dark-theme .file-details p {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .metadata-card {
+  background: #1e1e1e !important;
+  border: 1px solid #333 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .card-content h4 {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .card-content .value {
+  color: #ffffff !important;
+}
+
+.dark-theme .card-content .file-name {
+  color: #64b5f6 !important;
+}
+
+.dark-theme .card-content .file-size {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .next-section h3 {
+  color: #ffffff !important;
+}
+
+.dark-theme .next-section p {
+  color: #b0b0b0 !important;
+}
+
+.dark-theme .footer {
+  background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%) !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .footer-left,
+.dark-theme .footer-right {
+  color: #ffffff !important;
 }
 
 /* Responsive Design */
