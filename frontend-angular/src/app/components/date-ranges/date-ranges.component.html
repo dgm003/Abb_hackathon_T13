@@ -109,12 +109,12 @@
 
       <!-- Validation Message -->
       <div *ngIf="validationResponse" class="validation-message" 
-           [class.success]="validationResponse?.isValid" 
-           [class.error]="!validationResponse?.isValid">
+           [class.success]="validationResponse.isValid" 
+           [class.error]="!validationResponse.isValid">
         <div class="validation-icon">
-          {{ validationResponse?.isValid ? '✅' : '❌' }}
+          {{ validationResponse.isValid ? '✅' : '❌' }}
         </div>
-        <p>{{ validationResponse?.message }}</p>
+        <p>{{ validationResponse.message }}</p>
       </div>
 
       <!-- Error Message -->

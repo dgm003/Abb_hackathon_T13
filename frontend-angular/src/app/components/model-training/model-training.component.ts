@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { MlService, TrainResponse } from '../../services/ml.service';
 
 @Component({
@@ -90,7 +91,7 @@ export class ModelTrainingComponent {
   trained = false;
   metrics: TrainResponse['metrics'] | null = null;
 
-  constructor(private ml: MlService) {}
+  constructor(private ml: MlService, private router: Router) {}
 
   onTrain(): void {
     this.loading = true;
@@ -133,6 +134,6 @@ export class ModelTrainingComponent {
   }
 
   goNext(): void {
-    // Will navigate to Screen 4 later
+    this.router.navigate(['/simulation']);
   }
 }

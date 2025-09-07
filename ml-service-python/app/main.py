@@ -50,6 +50,19 @@ class TrainResponse(BaseModel):
     message: str
     metrics: TrainMetrics
 
+class SimulationData(BaseModel):
+    time: str
+    sampleId: str
+    prediction: str  # "Pass" or "Fail"
+    confidence: int
+    temperature: float
+    pressure: int
+    humidity: float
+
+class SimulationStartResponse(BaseModel):
+    success: bool
+    message: str
+
 # Data Processor Class
 class DataProcessor:
     def __init__(self):
@@ -142,6 +155,13 @@ app.add_middleware(
 # Initialize services
 data_processor = DataProcessor()
 
+# Simulation state
+simulation_state = {
+    'current_sample': 0,
+    'max_samples': 20,
+    'is_running': False
+}
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     return HealthResponse(status="Healthy", timestamp=datetime.utcnow())
@@ -193,6 +213,49 @@ async def train_model():
             accuracy=float(accuracy), precision=float(precision), recall=float(recall), f1=float(f1),
             lossCurve=loss_curve, accCurve=acc_curve, confusion=confusion
         )
+    )
+
+@app.post('/start-simulation', response_model=SimulationStartResponse)
+async def start_simulation():
+    simulation_state['current_sample'] = 0
+    simulation_state['is_running'] = True
+    return SimulationStartResponse(success=True, message="Simulation started")
+
+@app.get('/next-prediction', response_model=SimulationData)
+async def get_next_prediction():
+    if simulation_state['current_sample'] >= simulation_state['max_samples']:
+        raise HTTPException(status_code=404, detail="Simulation complete")
+    
+    # Generate mock prediction data
+    now = datetime.now()
+    time_str = now.strftime("%H:%M:%S")
+    sample_id = f"SAMPLE_{simulation_state['current_sample'] + 1:03d}"
+    
+    # Generate realistic sensor data
+    rng = np.random.default_rng()
+    temperature = 20 + rng.random() * 15  # 20-35°C
+    pressure = 1000 + rng.integers(0, 51)  # 1000-1050 hPa
+    humidity = 40 + rng.random() * 40  # 40-80%
+    
+    # Generate prediction based on sensor values (simple logic)
+    quality_score = (0.8 if temperature < 30 else 0.6) + \
+                   (0.1 if pressure > 1020 else 0) + \
+                   (0.1 if humidity < 70 else 0) + \
+                   (rng.random() * 0.2)
+    
+    prediction = "Pass" if quality_score > 0.7 else "Fail"
+    confidence = int(quality_score * 100)
+    
+    simulation_state['current_sample'] += 1
+    
+    return SimulationData(
+        time=time_str,
+        sampleId=sample_id,
+        prediction=prediction,
+        confidence=confidence,
+        temperature=round(temperature, 1),
+        pressure=pressure,
+        humidity=round(humidity, 1)
     )
 
 @app.get("/")

@@ -20,6 +20,7 @@ builder.Services.AddScoped<ICsvParserService, CsvParserService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IDateRangeService, DateRangeService>();
 builder.Services.AddScoped<IMLService, MLService>();
+builder.Services.AddScoped<ISimulationService, SimulationService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
