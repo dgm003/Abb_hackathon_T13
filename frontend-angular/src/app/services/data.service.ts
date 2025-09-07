@@ -24,6 +24,7 @@ export interface FileUploadResponse {
 })
 export class DataService {
   private apiUrl = 'http://localhost:8080/api/data';
+  private mlUrl = 'http://localhost:8080/api/ml';
 
   constructor(private http: HttpClient) { }
 
@@ -35,6 +36,29 @@ export class DataService {
       .pipe(
         catchError(this.handleError)
       );
+  }
+
+  runMlPipeline(trainPath: string, testPath: string, simulatePath: string, targetColumn = 'Response'): Observable<any> {
+    const payload = { trainPath, testPath, simulatePath, targetColumn };
+    return this.http.post(`${this.mlUrl}/run`, payload)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  train(trainPath: string, targetColumn = 'Response'): Observable<any> {
+    return this.http.post(`${this.mlUrl}/train`, { trainPath, targetColumn })
+      .pipe(catchError(this.handleError));
+  }
+
+  test(testPath: string, modelPath: string, scalerPath: string, targetColumn = 'Response'): Observable<any> {
+    return this.http.post(`${this.mlUrl}/test`, { testPath, modelPath, scalerPath, targetColumn })
+      .pipe(catchError(this.handleError));
+  }
+
+  simulate(simulatePath: string, modelPath: string, scalerPath: string): Observable<any> {
+    return this.http.post(`${this.mlUrl}/simulate`, { simulatePath, modelPath, scalerPath })
+      .pipe(catchError(this.handleError));
   }
 
   getHealth(): Observable<any> {

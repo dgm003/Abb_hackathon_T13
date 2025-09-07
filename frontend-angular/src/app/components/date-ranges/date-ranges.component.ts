@@ -73,11 +73,11 @@ export class DateRangesComponent implements OnInit {
   }
 
   proceedToNext(): void {
-    if (this.validationResponse?.isValid) {
-      // Navigate to next screen (Screen 3: Model Training)
-      console.log('Proceeding to Model Training screen...');
-      // TODO: Implement navigation to model training screen
+    // Navigate to next screen (Screen 3: Model Training)
+    if (!this.validationResponse?.isValid) {
+      console.warn('Proceeding to Model Training without validated ranges');
     }
+    this.router.navigate(['/model-training']);
   }
 
   formatDate(dateString: string): string {

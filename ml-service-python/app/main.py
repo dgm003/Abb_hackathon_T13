@@ -6,6 +6,7 @@ import numpy as np
 from typing import Optional
 from pydantic import BaseModel
 import os
+from .services.ml_model import MLModelService
 
 # Define schemas directly in main.py
 class DataSummary(BaseModel):
@@ -162,6 +163,7 @@ app.add_middleware(
 
 # Initialize services
 data_processor = DataProcessor()
+ml_service = MLModelService()
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -246,3 +248,115 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# ------------------ ML Endpoints ------------------
+
+class TrainRequest(BaseModel):
+    file_path: str
+    target_column: str = 'Response'
+    model_type: str = 'xgboost'
+
+class TrainResponse(BaseModel):
+    success: bool
+    message: str
+    metrics: Optional[dict] = None
+    model_path: Optional[str] = None
+    scaler_path: Optional[str] = None
+    feature_columns: Optional[list] = None
+
+class TestRequest(BaseModel):
+    file_path: str
+    target_column: str = 'Response'
+    model_path: str
+    scaler_path: str
+
+class TestResponse(BaseModel):
+    success: bool
+    message: str
+    metrics: Optional[dict] = None
+
+class SimulateRequest(BaseModel):
+    file_path: str
+    model_path: str
+    scaler_path: str
+
+class SimulateResponse(BaseModel):
+    success: bool
+    message: str
+    predictions: Optional[list] = None
+    probabilities: Optional[list] = None
+
+def _load_dataframe_or_400(file_path: str) -> pd.DataFrame:
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+    try:
+        return pd.read_csv(file_path)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read CSV: {str(e)}")
+
+@app.post("/train", response_model=TrainResponse)
+async def train(request: TrainRequest):
+    try:
+        df = _load_dataframe_or_400(request.file_path)
+        result = ml_service.train_model(df, target_column=request.target_column, model_type=request.model_type)
+        if not result.get('success'):
+            return TrainResponse(success=False, message=result.get('error', 'Training failed'))
+        return TrainResponse(
+            success=True,
+            message="Training completed",
+            metrics=result['metrics'],
+            model_path=result['model_path'],
+            scaler_path=result['scaler_path'],
+            feature_columns=result['feature_columns']
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        return TrainResponse(success=False, message=str(e))
+
+@app.post("/test", response_model=TestResponse)
+async def test(request: TestRequest):
+    try:
+        df = _load_dataframe_or_400(request.file_path)
+        if request.target_column not in df.columns:
+            raise HTTPException(status_code=400, detail=f"Target column '{request.target_column}' not found")
+        # Load model
+        ml_service.load_model(request.model_path, request.scaler_path)
+        # Prepare features/target similar to training
+        feature_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+        feature_columns = [c for c in feature_columns if c != request.target_column and 'timestamp' not in c.lower()]
+        X = df[feature_columns].fillna(df[feature_columns].mean())
+        y = df[request.target_column].fillna(0)
+        preds, probas = ml_service.predict(X)
+        # Compute metrics using internal helper
+        metrics = ml_service._calculate_metrics(y, preds, probas)  # pylint: disable=protected-access
+        return TestResponse(success=True, message="Testing completed", metrics=metrics)
+    except HTTPException:
+        raise
+    except Exception as e:
+        return TestResponse(success=False, message=str(e))
+
+@app.post("/simulate", response_model=SimulateResponse)
+async def simulate(request: SimulateRequest):
+    try:
+        df = _load_dataframe_or_400(request.file_path)
+        # Load model
+        ml_service.load_model(request.model_path, request.scaler_path)
+        # Prepare features using the same order as training
+        if getattr(ml_service, 'feature_list', None):
+            use_cols = [c for c in ml_service.feature_list if c in df.columns]
+        else:
+            use_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            use_cols = [c for c in use_cols if 'timestamp' not in c.lower()]
+        X = df[use_cols].fillna(df[use_cols].mean())
+        preds, probas = ml_service.predict(X)
+        return SimulateResponse(
+            success=True,
+            message="Simulation completed",
+            predictions=[int(p) for p in preds.tolist()]
+            , probabilities=[float(p) for p in probas.tolist()]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        return SimulateResponse(success=False, message=str(e))

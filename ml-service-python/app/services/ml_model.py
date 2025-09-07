@@ -78,12 +78,16 @@ class MLModelService:
             # Calculate metrics
             metrics = self._calculate_metrics(y_test, y_pred, y_pred_proba)
             
-            # Save model
+            # Save model and artifacts
             model_path = os.path.join(self.model_directory, f"{model_type}_model.joblib")
             scaler_path = os.path.join(self.model_directory, f"{model_type}_scaler.joblib")
+            features_path = os.path.join(self.model_directory, f"{model_type}_features.txt")
             
             joblib.dump(self.model, model_path)
             joblib.dump(self.scaler, scaler_path)
+            # Persist feature column order for simulation
+            with open(features_path, 'w') as f:
+                f.write("\n".join(feature_columns))
             
             return {
                 'success': True,
@@ -108,9 +112,14 @@ class MLModelService:
         recall = recall_score(y_true, y_pred, zero_division=0)
         f1 = f1_score(y_true, y_pred, zero_division=0)
         
-        # Confusion matrix
-        cm = confusion_matrix(y_true, y_pred)
-        tn, fp, fn, tp = cm.ravel()
+        # Confusion matrix (force 2x2 even if a class is missing)
+        cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+        # Ensure shape (2,2)
+        if cm.shape == (2, 2):
+            tn, fp, fn, tp = cm.ravel()
+        else:
+            # Fallback safe defaults
+            tn, fp, fn, tp = 0, 0, 0, 0
         
         return {
             'accuracy': round(accuracy * 100, 2),
@@ -147,3 +156,10 @@ class MLModelService:
         """
         self.model = joblib.load(model_path)
         self.scaler = joblib.load(scaler_path)
+        # Load features list if present
+        features_file = model_path.replace('_model.joblib', '_features.txt')
+        if os.path.exists(features_file):
+            with open(features_file, 'r') as f:
+                self.feature_list = [line.strip() for line in f.readlines() if line.strip()]
+        else:
+            self.feature_list = None

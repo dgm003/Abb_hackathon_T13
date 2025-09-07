@@ -16,10 +16,16 @@ services:
       - "8080:8080"
     volumes:
       - ./data:/app/data
+    environment:
+      - ML_SERVICE_BASE_URL=http://ml-service-python:8000
     depends_on:
       - ml-service-python
     networks:
       - intelli_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    links:
+      - ml-service-python
 
   ml-service-python:
     build: ./ml-service-python
@@ -28,8 +34,11 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
+      - ./data/models:/app/models
     networks:
       - intelli_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 networks:
   intelli_network:

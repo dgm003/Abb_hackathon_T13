@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Backend.Services;
 using Microsoft.AspNetCore.Http.Features;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ICsvParserService, CsvParserService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IDateRangeService, DateRangeService>();
+// ML Service HTTP client pointing to ml-service-python container
+builder.Services.AddHttpClient<IMLService, MLService>(client =>
+{
+    // Use container DNS name when running under docker-compose
+    var baseUrl = Environment.GetEnvironmentVariable("ML_SERVICE_BASE_URL") ?? "http://ml-service-python:8000";
+    client.BaseAddress = new Uri(baseUrl);
+});
 
 // Add CORS
 builder.Services.AddCors(options =>

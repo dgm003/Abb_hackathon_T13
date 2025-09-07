@@ -1,1 +1,61 @@
+/* Global shared layout styles (header, steps, footer) reused across pages */
+body { margin: 0; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.header h1 { margin: 0; font-size: 2rem; font-weight: 600; }
+.subtitle { margin: 5px 0 0 0; font-size: 0.9rem; opacity: 0.9; }
+.abb-logo { background: #e60012; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; font-size: 1.2rem; }
+
+.progress-steps { background: white; padding: 20px 40px; display: flex; align-items: center; gap: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
+.step { display: flex; align-items: center; gap: 10px; color: #666; font-weight: 500; }
+.step.active { color: #4CAF50; }
+.step.completed { color: #2e7d32; }
+.step-number { width: 30px; height: 30px; border-radius: 50%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+.step.active .step-number, .step.completed .step-number { background: #4CAF50; color: white; }
+.step-badge { background: #2196F3; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; margin-left: auto; }
+
+.main-content { padding: 24px 40px; max-width: 1200px; margin: 0 auto; }
+
+.section { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+
+.footer { background: linear-gradient(135deg, #e60012 0%, #764ba2 100%); color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; margin-top: 40px; }
+.footer-left { font-size: 0.9rem; color: white; }
+.footer-right { font-size: 1rem; font-weight: bold; letter-spacing: 1px; color: white; }
+
+/* Cards for metrics (page 3) */
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.metric-card { color: white; border-radius: 10px; padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+.metric-card h4 { margin: 0 0 8px 0; font-size: 0.9rem; opacity: 0.95; }
+.metric-card .value { font-size: 1.8rem; font-weight: 700; }
+.metric-blue { background: linear-gradient(135deg, #6a85ff 0%, #2f4bff 100%); }
+.metric-pink { background: linear-gradient(135deg, #ff7eb3 0%, #ff4d6d 100%); }
+.metric-cyan { background: linear-gradient(135deg, #65c7f7 0%, #0052d4 100%); }
+.metric-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+/* Simple chart placeholders */
+.chart-card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 12px; }
+.chart-header { font-weight: 600; margin-bottom: 8px; color: #333; }
+.chart-placeholder { height: 260px; background: repeating-linear-gradient( to right, #f3f4f6, #f3f4f6 10px, #ffffff 10px, #ffffff 20px ); border-radius: 8px; position: relative; overflow: hidden; }
+.chart-placeholder:after { content: ""; position: absolute; left: -40%; top: 0; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent); animation: shimmer 1.8s infinite; }
+@keyframes shimmer { 0% { left: -40%; } 100% { left: 100%; } }
+
+/* Buttons */
+.primary-btn { background: #2196F3; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; }
+.primary-btn:disabled { background: #c5c5c5; cursor: not-allowed; }
+.ghost-btn { background: #f1f1f1; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header { flex-direction: column; gap: 12px; text-align: center; }
+  .progress-steps { flex-direction: column; gap: 12px; }
+  .step-badge { margin-left: 0; }
+}
 /* You can add global styles to this file, and also import other style files */
