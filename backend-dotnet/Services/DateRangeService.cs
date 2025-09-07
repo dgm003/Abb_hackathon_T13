@@ -46,6 +46,7 @@ namespace Backend.Services
                 }
 
                 // Count records in each period
+                await SplitCsvAndCallFeatureImportanceAsync(preprocessedFile, request);
                 var periods = await CountRecordsInPeriodsAsync(preprocessedFile, request);
                 response.Periods = periods;
 
@@ -112,17 +113,17 @@ namespace Backend.Services
         private async Task<List<PeriodSummary>> CountRecordsInPeriodsAsync(string filePath, DateRangeRequest request)
         {
             var periods = new List<PeriodSummary>();
-            
+
             // Simple proportional distribution based on period duration
             var trainingDays = (request.TrainingEnd - request.TrainingStart).TotalDays + 1;
             var testingDays = (request.TestingEnd - request.TestingStart).TotalDays + 1;
             var simulationDays = (request.SimulationEnd - request.SimulationStart).TotalDays + 1;
             var totalDays = trainingDays + testingDays + simulationDays;
-            
+
             // Estimate total records from file size (fast)
             var fileInfo = new FileInfo(filePath);
             var estimatedTotalRecords = (int)(fileInfo.Length / 100); // Rough estimate
-            
+
             // Distribute records proportionally based on period duration
             var trainingCount = (int)(estimatedTotalRecords * trainingDays / totalDays);
             var testingCount = (int)(estimatedTotalRecords * testingDays / totalDays);
@@ -168,7 +169,7 @@ namespace Backend.Services
 
             // Get total records from all periods
             var totalRecords = periods.Sum(p => p.RecordCount);
-            
+
             // Ensure we have some data to show
             if (totalRecords == 0)
             {
@@ -254,7 +255,7 @@ namespace Backend.Services
             var totalDays = period.DurationInDays;
             var daysInMonth = DateTime.DaysInMonth(2021, month);
             var recordsPerDay = totalDays > 0 ? period.RecordCount / totalDays : 0;
-            
+
             return (int)(recordsPerDay * daysInMonth);
         }
 
@@ -302,6 +303,75 @@ namespace Backend.Services
             }
 
             return (earliest ?? DateTime.MinValue, latest ?? DateTime.MaxValue);
+        }
+
+        // ...replace inside SplitCsvAndCallFeatureImportanceAsync...
+
+        private async Task SplitCsvAndCallFeatureImportanceAsync(string preprocessedFile, DateRangeRequest request)
+        {
+            var trainPath = Path.Combine(_dataDirectory, "preprocessed", "train.csv");
+            var testPath = Path.Combine(_dataDirectory, "preprocessed", "test.csv");
+            var simulatePath = Path.Combine(_dataDirectory, "preprocessed", "simulate.csv");
+
+            using var reader = new StreamReader(preprocessedFile);
+            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = true });
+
+            using var trainWriter = new StreamWriter(trainPath);
+            using var trainCsv = new CsvWriter(trainWriter, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = true });
+
+            using var testWriter = new StreamWriter(testPath);
+            using var testCsv = new CsvWriter(testWriter, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = true });
+
+            using var simulateWriter = new StreamWriter(simulatePath);
+            using var simulateCsv = new CsvWriter(simulateWriter, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = true });
+
+            await csv.ReadAsync();
+            csv.ReadHeader();
+            var headerRow = csv.HeaderRecord;
+
+            // Write headers to all files
+            foreach (var header in headerRow)
+    trainCsv.WriteField(header);
+trainCsv.NextRecord();
+
+foreach (var header in headerRow)
+    testCsv.WriteField(header);
+testCsv.NextRecord();
+
+foreach (var header in headerRow)
+    simulateCsv.WriteField(header);
+simulateCsv.NextRecord();
+
+            while (await csv.ReadAsync())
+            {
+                var timestampStr = csv.GetField("synthetic_timestamp");
+                if (!DateTime.TryParse(timestampStr, out var timestamp))
+                    continue;
+
+                if (timestamp >= request.TrainingStart && timestamp <= request.TrainingEnd)
+                {
+                    for (int i = 0; i < headerRow.Length; i++)
+                        trainCsv.WriteField(csv.GetField(headerRow[i]));
+                    trainCsv.NextRecord();
+                }
+                else if (timestamp >= request.TestingStart && timestamp <= request.TestingEnd)
+                {
+                    for (int i = 0; i < headerRow.Length; i++)
+                        testCsv.WriteField(csv.GetField(headerRow[i]));
+                    testCsv.NextRecord();
+                }
+                else if (timestamp >= request.SimulationStart && timestamp <= request.SimulationEnd)
+                {
+                    for (int i = 0; i < headerRow.Length; i++)
+                        simulateCsv.WriteField(csv.GetField(headerRow[i]));
+                    simulateCsv.NextRecord();
+                }
+            }
+
+            // Call Python microservice for feature importance
+            //using var httpClient = new HttpClient();
+            //var response = await httpClient.PostAsync("http://localhost:8000/feature-importance", null); // Adjust URL as needed
+            //response.EnsureSuccessStatusCode();
         }
     }
 }
