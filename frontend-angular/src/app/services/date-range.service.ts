@@ -20,9 +20,9 @@ export interface PeriodSummary {
   recordCount: number;
 }
 
-export interface MonthlyData {
-  month: string;
-  year: number;
+export interface DailyData {
+  date: string; // Format: "2021-01-01"
+  day: string; // Format: "Jan 1"
   volume: number;
   periodType: string;
 }
@@ -31,7 +31,7 @@ export interface DateRangeResponse {
   isValid: boolean;
   message: string;
   periods: PeriodSummary[];
-  monthlyData: MonthlyData[];
+  dailyData: DailyData[];
 }
 
 @Injectable({

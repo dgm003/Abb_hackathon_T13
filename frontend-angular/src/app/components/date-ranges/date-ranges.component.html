@@ -136,49 +136,10 @@
         </div>
       </div>
 
-      <!-- Timeline Chart -->
-      <div *ngIf="validationResponse?.isValid && monthlyData.length > 0" class="chart-section">
-        <h3>Selected Date Ranges Summary</h3>
-        <div class="chart-container">
-          <div class="chart">
-            <div class="chart-bars">
-              <div *ngFor="let month of ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']" 
-                   class="bar-container">
-                <div class="bar" [style.height.px]="getBarHeight(month)">
-                  <!-- Training segment -->
-                  <div *ngIf="getMonthlyVolumeByPeriod(month, 'Training') > 0" 
-                       class="bar-segment training"
-                       [style.height.%]="getSegmentHeight(month, 'Training')"
-                       [title]="month + ' Training: ' + getMonthlyVolumeByPeriod(month, 'Training') + ' records'">
-                  </div>
-                  <!-- Testing segment -->
-                  <div *ngIf="getMonthlyVolumeByPeriod(month, 'Testing') > 0" 
-                       class="bar-segment testing"
-                       [style.height.%]="getSegmentHeight(month, 'Testing')"
-                       [title]="month + ' Testing: ' + getMonthlyVolumeByPeriod(month, 'Testing') + ' records'">
-                  </div>
-                  <!-- Simulation segment -->
-                  <div *ngIf="getMonthlyVolumeByPeriod(month, 'Simulation') > 0" 
-                       class="bar-segment simulation"
-                       [style.height.%]="getSegmentHeight(month, 'Simulation')"
-                       [title]="month + ' Simulation: ' + getMonthlyVolumeByPeriod(month, 'Simulation') + ' records'">
-                  </div>
-                  <!-- Baseline segment -->
-                  <div *ngIf="getMonthlyVolumeByPeriod(month, '') > 0" 
-                       class="bar-segment baseline"
-                       [style.height.%]="getSegmentHeight(month, '')"
-                       [title]="month + ' Baseline: ' + getMonthlyVolumeByPeriod(month, '') + ' records'">
-                  </div>
-                </div>
-                <span class="month-label">{{ month }}</span>
-              </div>
-            </div>
-            <div class="chart-labels">
-              <div class="y-axis-label">Volume</div>
-              <div class="x-axis-label">Timeline (2021)</div>
-            </div>
-          </div>
-        </div>
+      <!-- Plotly Chart -->
+      <div *ngIf="validationResponse?.isValid && dailyData.length > 0" class="chart-section">
+        <h3>Selected Date Ranges Summary (Plotly)</h3>
+        <div id="plotly-daily-bar" class="plotly-container"></div>
       </div>
 
       <!-- Action Buttons -->
@@ -186,8 +147,13 @@
         <button class="validate-btn" 
                 (click)="validateRanges()" 
                 [disabled]="isValidating">
-          {{ isValidating ? 'Validating...' : 'Validate Ranges' }}
+          <span *ngIf="!isValidating">Validate Ranges</span>
+          <span *ngIf="isValidating" class="spinner"></span>
+          <span *ngIf="isValidating"> Validating...</span>
         </button>
+        <div *ngIf="isValidating" class="inline-overlay">
+          <div class="spinner-large"></div>
+        </div>
         <button class="next-btn" 
                 (click)="proceedToNext()" 
                 [disabled]="!validationResponse?.isValid">

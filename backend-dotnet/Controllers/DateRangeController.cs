@@ -31,7 +31,12 @@ namespace Backend.Controllers
 
                 Console.WriteLine($"Received date range request: Training {request.TrainingStart} to {request.TrainingEnd}");
                 var result = await _dateRangeService.ValidateDateRangesAsync(request);
-                Console.WriteLine($"Generated {result.Periods.Count} periods and {result.MonthlyData.Count} monthly data points");
+                Console.WriteLine($"Generated {result.Periods.Count} periods and {result.DailyData.Count} daily data points");
+                // Debug: print first 15 daily volumes to verify variability
+                foreach (var sample in result.DailyData.Take(15))
+                {
+                    Console.WriteLine($"DailyData: {sample.Date} | period={sample.PeriodType} | volume={sample.Volume}");
+                }
                 return Ok(result);
             }
             catch (Exception ex)
