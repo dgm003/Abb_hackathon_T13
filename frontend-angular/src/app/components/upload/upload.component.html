@@ -1,4 +1,11 @@
 <div class="upload-container">
+  <!-- Fullscreen overlay while uploading -->
+  <div *ngIf="isUploading" class="overlay">
+    <div class="overlay-content">
+      <div class="spinner-large"></div>
+      <div class="overlay-text">Uploading...</div>
+    </div>
+  </div>
   <!-- Header -->
   <div class="header">
     <h1>MiniML - Predictive Quality Control</h1>
@@ -63,7 +70,9 @@
           </div>
           <div class="file-actions">
             <button class="upload-btn" (click)="uploadFile()" [disabled]="isUploading">
-              {{ isUploading ? 'Uploading...' : 'Upload' }}
+              <span *ngIf="!isUploading">Upload</span>
+              <span *ngIf="isUploading" class="spinner small"></span>
+              <span *ngIf="isUploading"> Uploading...</span>
             </button>
             <button class="cancel-btn" (click)="resetUpload()">Cancel</button>
           </div>
@@ -120,9 +129,7 @@
           </div>
 
           <div class="next-section">
-            <button class="next-btn" (click)="proceedToNext()">
-              Next
-            </button>
+            <button class="next-btn" (click)="proceedToNext()">Next</button>
           </div>
         </div>
       </div>

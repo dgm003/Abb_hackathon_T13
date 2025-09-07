@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DateRangeService, DateRangeRequest, DateRangeResponse, PeriodSummary, MonthlyData } from '../../services/date-range.service';
+import { DateRangeService, DateRangeRequest, DateRangeResponse, PeriodSummary, DailyData } from '../../services/date-range.service';
 
 @Component({
   selector: 'app-date-ranges',
@@ -27,7 +27,7 @@ export class DateRangesComponent implements OnInit {
 
   // Summary data
   periods: PeriodSummary[] = [];
-  monthlyData: MonthlyData[] = [];
+  dailyData: DailyData[] = [];
 
   constructor(private dateRangeService: DateRangeService, private router: Router) { }
 
@@ -58,10 +58,11 @@ export class DateRangesComponent implements OnInit {
       next: (response) => {
         console.log('Date range validation response:', response);
         console.log('Periods:', response.periods);
-        console.log('Monthly data:', response.monthlyData);
+        console.log('Daily data:', response.dailyData);
         this.validationResponse = response;
         this.periods = response.periods;
-        this.monthlyData = response.monthlyData;
+        this.dailyData = response.dailyData;
+        this.renderPlotly();
         this.isValidating = false;
       },
       error: (error) => {
@@ -70,6 +71,52 @@ export class DateRangesComponent implements OnInit {
         this.isValidating = false;
       }
     });
+  }
+
+  private renderPlotly(): void {
+    try {
+      // @ts-ignore
+      const PlotlyRef = (window as any).Plotly;
+      if (!PlotlyRef) { return; }
+
+      const dates = this.getJanuaryDates();
+      const volumes = dates.map(d => this.getDailyVolume(d));
+      const colors = dates.map(d => {
+        const item = this.dailyData.find(x => x.date === d);
+        switch (item?.periodType) {
+          case 'Training': return '#4CAF50';
+          case 'Testing': return '#FF9800';
+          case 'Simulation': return '#2196F3';
+          default: return '#9E9E9E';
+        }
+      });
+      const hover = dates.map(d => {
+        const item = this.dailyData.find(x => x.date === d);
+        const label = item?.periodType ? item.periodType : 'Baseline';
+        return `${this.formatDateForDisplay(d)} ${label}: ${this.getDailyVolume(d)} records`;
+      });
+
+      const data = [{
+        x: dates.map(d => this.formatDateForDisplay(d)),
+        y: volumes,
+        type: 'bar',
+        marker: { color: colors },
+        hoverinfo: 'text',
+        text: hover
+      }];
+
+      const layout = {
+        margin: { l: 40, r: 10, t: 10, b: 40 },
+        height: 320,
+        yaxis: { title: 'Volume' },
+        xaxis: { title: 'Timeline (January 2021)' },
+        bargap: 0.2
+      } as any;
+
+      PlotlyRef.react('plotly-daily-bar', data, layout, { displayModeBar: false });
+    } catch (e) {
+      console.warn('Plotly render skipped:', e);
+    }
   }
 
   proceedToNext(): void {
@@ -98,41 +145,79 @@ export class DateRangesComponent implements OnInit {
     }
   }
 
-  getMonthlyVolume(month: string): number {
-    const data = this.monthlyData.find(d => d.month === month);
+  getDailyVolume(date: string): number {
+    const data = this.dailyData.find(d => d.date === date);
     const volume = data ? data.volume : 0;
-    console.log(`Volume for ${month}:`, volume);
     return volume;
   }
 
-  getMonthlyPeriodType(month: string): string {
-    const data = this.monthlyData.find(d => d.month === month);
-    const periodType = data ? data.periodType : '';
-    console.log(`Period type for ${month}:`, periodType);
-    return periodType;
-  }
-
-  getBarHeight(month: string): number {
-    const volume = this.getMonthlyVolume(month);
+  getBarHeight(date: string): number {
+    const volume = this.getDailyVolume(date);
     if (volume === 0) return 2; // Minimum height for visibility
-    
-    // Scale the height to fit within the chart (max 180px)
-    const maxVolume = Math.max(...this.monthlyData.map(d => d.volume));
-    const height = Math.max(2, (volume / maxVolume) * 180);
-    console.log(`Bar height for ${month}: ${height}px (volume: ${volume})`);
-    return height;
+
+    const volumes = this.dailyData.map(d => d.volume);
+    const maxVolume = Math.max(...volumes);
+    const minVolume = Math.min(...volumes);
+
+    // Guard: if all equal, render a mid-height bar
+    if (maxVolume === minVolume) {
+      return 120; // constant mid-height
+    }
+
+    // Min–max scaling with a base so small differences still show
+    const chartHeight = 180;           // px available for bars
+    const base = 40;                   // px baseline so smallest value is still visible
+    const range = Math.max(1, maxVolume - minVolume);
+    const ratio = (volume - minVolume) / range; // 0..1
+    return Math.max(2, Math.min(base + ratio * (chartHeight - base), chartHeight));
   }
 
-  getMonthlyVolumeByPeriod(month: string, periodType: string): number {
-    const data = this.monthlyData.find(d => d.month === month && d.periodType === periodType);
+  getDailyVolumeByPeriod(date: string, periodType: string): number {
+    const data = this.dailyData.find(d => d.date === date && d.periodType === periodType);
     return data ? data.volume : 0;
   }
 
-  getSegmentHeight(month: string, periodType: string): number {
-    const totalVolume = this.getMonthlyVolume(month);
-    const segmentVolume = this.getMonthlyVolumeByPeriod(month, periodType);
-    
+  getSegmentHeight(date: string, periodType: string): number {
+    const totalVolume = this.getDailyVolume(date);
+    const segmentVolume = this.getDailyVolumeByPeriod(date, periodType);
     if (totalVolume === 0) return 0;
     return (segmentVolume / totalVolume) * 100;
+  }
+
+  getJanuaryDates(): string[] {
+    // Show only first 15 days on the x-axis
+    const dates: string[] = [];
+    for (let day = 1; day <= 15; day++) {
+      dates.push(`2021-01-${day.toString().padStart(2, '0')}`);
+    }
+    return dates;
+  }
+
+  private getMaxVolume(): number {
+    if (!this.dailyData || this.dailyData.length === 0) return 0;
+    return Math.max(...this.dailyData.map(d => d.volume));
+  }
+
+  private getMinVolume(): number {
+    if (!this.dailyData || this.dailyData.length === 0) return 0;
+    return Math.min(...this.dailyData.map(d => d.volume));
+  }
+
+  getYAxisTicks(): number[] {
+    const max = this.getMaxVolume();
+    const min = this.getMinVolume();
+    if (max === 0) return [0, 0, 0, 0, 0];
+    if (max === min) return [min, min, min, min, min];
+    const q1 = Math.round(min + (max - min) * 0.25);
+    const q2 = Math.round(min + (max - min) * 0.5);
+    const q3 = Math.round(min + (max - min) * 0.75);
+    return [min, q1, q2, q3, max];
+  }
+
+  formatDateForDisplay(date: string): string {
+    const d = new Date(date);
+    const month = d.toLocaleDateString('en-US', { month: 'short' });
+    const day = d.getDate();
+    return `${month} ${day}`;
   }
 }

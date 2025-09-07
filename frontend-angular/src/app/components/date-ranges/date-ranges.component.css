@@ -316,19 +316,31 @@
 }
 
 .chart-bars {
-  display: flex;
-  align-items: end;
+  display: flex !important;          /* force horizontal layout */
+  flex-direction: row;
+  align-items: flex-end;
   height: 200px;
-  gap: 0.5rem;
+  gap: 0.4rem;
   padding-bottom: 1rem;
+  overflow-x: auto;
 }
 
+/* Restore y-axis tick visuals */
+.y-axis-ticks { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; }
+.y-tick { position: absolute; display: block; }
+
+/* Keep labels overlay non-interactive so tooltips show on bars */
+.chart-labels { pointer-events: none; }
+
+/* Ensure bars receive hover */
+.bar, .bar-segment { pointer-events: auto; }
+
 .bar-container {
-  flex: 1;
+  flex: 0 0 22px;                     /* fixed narrow column per day */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .bar {
@@ -337,7 +349,7 @@
   border-radius: 2px 2px 0 0;
   transition: all 0.3s ease;
   cursor: pointer;
-  background-color: #e0e0e0; /* Default color for empty bars */
+  background-color: #e0e0e0;
   display: flex;
   flex-direction: column;
 }
@@ -370,25 +382,32 @@
 }
 
 .month-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #666;
   font-weight: 500;
+  margin-top: 0.25rem;
 }
 
 .chart-labels {
   position: absolute;
   left: 0;
+  right: 0; /* ensure full width so x-axis label can truly center */
   top: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 1rem 0 2rem 0;
+  pointer-events: none; /* allow hover on bars */
 }
 
 .y-axis-label {
   writing-mode: vertical-rl;
   text-orientation: mixed;
+  position: absolute;
+  left: 0.4rem; /* slight left margin now that ticks are gone */
+  top: 1rem;
+  bottom: auto;
   font-size: 0.9rem;
   color: #666;
   font-weight: 500;
@@ -396,9 +415,11 @@
 
 .x-axis-label {
   position: absolute;
-  bottom: 0;
+  bottom: 1.5rem; /* just below the baseline */
   left: 50%;
+  width: 100%;
   transform: translateX(-50%);
+  text-align: center;
   font-size: 0.9rem;
   color: #666;
   font-weight: 500;
@@ -434,6 +455,41 @@
 .validate-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+/* Spinner for validating */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.6);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Inline overlay centered under the buttons during validation */
+.inline-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.spinner-large {
+  width: 36px;
+  height: 36px;
+  border: 4px solid rgba(33, 150, 243, 0.35);
+  border-top-color: #2196F3;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
 }
 
 .next-btn {
@@ -504,3 +560,7 @@
     max-width: 300px;
   }
 }
+
+/* Hover tooltips: overlays non-interactive, bars capture hover */
+.y-axis-ticks, .chart-labels { pointer-events: none; z-index: 1; }
+.bar, .bar-segment { pointer-events: auto; z-index: 2; }
