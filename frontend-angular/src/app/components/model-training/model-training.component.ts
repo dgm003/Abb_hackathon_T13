@@ -106,7 +106,7 @@ import { MlService, TrainResponse } from '../../services/ml.service';
     .training-wrapper { padding: 1.5rem; }
     .header-row { display:flex; align-items:center; justify-content: space-between; margin-bottom: 1rem; }
     .step { background:#eef3ff; color:#3f51b5; padding: 0.25rem 0.5rem; border-radius: 6px; font-size:0.8rem; }
-    .panel { background:#fff; border-radius:12px; padding:1rem; box-shadow:0 4px 15px rgba(0,0,0,0.08); }
+    .panel { background:#fff; border-radius:12px; padding:1rem; box-shadow:0 4px 15px rgba(0,0,0,0.08); display:flex; justify-content:center; align-items:center; }
     .loading { color:#555; }
     .primary { background:#3f51b5; color:#fff; border:0; border-radius:6px; padding:0.6rem 1rem; cursor:pointer; }
     .primary.outline { background:transparent; color:#3f51b5; border:1px solid #3f51b5; }

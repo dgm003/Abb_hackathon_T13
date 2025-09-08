@@ -36,3 +36,4 @@ export class ThemeService {
     this.setTheme(newTheme);
   }
 }
+

@@ -152,6 +152,7 @@ interface UploadHistoryItem {
     .primary:hover { background: #1565c0; }
     
     .dark-theme .header h1 { color: #ffffff; }
+    .dark-theme .subtitle { color: #ffffff; }
     .dark-theme .summary-card { background: #1e1e1e; color: #ffffff; }
     .dark-theme .summary-value { color: #64b5f6; }
     .dark-theme .summary-label { color: #b0b0b0; }
